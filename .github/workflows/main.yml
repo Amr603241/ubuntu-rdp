@@ -1,0 +1,30 @@
+name: Ubuntu 24.04 RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ubuntu-rdp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Install Tailscale & Connect
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
+          sudo tailscale up --authkey="${{ secrets.TAILSCALE_AUTHKEY }}" --hostname="github-ubuntu"
+
+      - name: Setup Desktop (XFCE) & XRDP
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xfce4 xfce4-goodies xrdp dbus-x11
+          echo "xfce4-session" > /home/runner/.xsession
+          sudo chown runner:runner /home/runner/.xsession
+          sudo adduser xrdp ssl-cert
+          echo "runner:${{ secrets.RDP_PASSWORD }}" | sudo chpasswd
+          sudo systemctl restart xrdp
+
+      - name: Keep Session Alive
+        run: |
+          echo "Ubuntu RDP is ready! Connect to github-ubuntu"
+          sleep 21300
